@@ -1,0 +1,143 @@
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Desk Radar</title>
+<style>
+:root{--bg:#0b0d10;--card:#14181d;--line:#232a32;--tx:#d8dde3;--dim:#7d8792;--acc:#3fd07a;--amb:#f0a52a;--red:#ef5350;--blue:#4fb0ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 -apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+header{position:sticky;top:0;z-index:5;background:#0b0d10ee;backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:12px 18px;display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center}
+header h1{font-size:18px;margin:0 12px 0 0;letter-spacing:.06em}header .chip{font-size:12px;color:var(--dim);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:3px 10px}
+header .chip b{color:var(--tx);font-weight:600}nav{margin-left:auto;display:flex;gap:4px;flex-wrap:wrap}nav a{color:var(--dim);text-decoration:none;font-size:13px;padding:4px 8px;border-radius:6px}nav a:hover{color:var(--tx);background:var(--card)}
+main{max-width:1180px;margin:0 auto;padding:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.card h2{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin:0 0 10px;font-weight:600}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:7px 0;border-top:1px solid var(--line)}.row:first-of-type{border-top:0}
+.row label{color:var(--tx)}.row small{display:block;color:var(--dim);font-size:12px;margin-top:2px}
+select,input[type=text],input[type=number],input[type=time],textarea{background:#0e1115;color:var(--tx);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit;font-size:14px;min-width:120px}
+input[type=number]{width:90px;min-width:0}textarea{width:100%;min-height:90px;font-family:ui-monospace,Menlo,monospace;font-size:12px}
+input[type=range]{width:150px;accent-color:var(--acc)}.val{display:inline-block;width:46px;text-align:right;color:var(--dim);font-variant-numeric:tabular-nums}
+.sw{position:relative;width:44px;height:24px;flex:none}.sw input{opacity:0;width:0;height:0}.sw i{position:absolute;inset:0;background:#2a323c;border-radius:999px;transition:.15s}.sw i:before{content:"";position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#aab3bd;transition:.15s}
+.sw input:checked+i{background:var(--acc)}.sw input:checked+i:before{transform:translateX(20px);background:#fff}
+.live{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:center;justify-items:center}.live img.dial{width:100%;max-width:240px;border-radius:50%;background:#000;image-rendering:pixelated}.live img.oled{width:100%;max-width:256px;image-rendering:pixelated;border:1px solid var(--line);border-radius:6px}
+.btn{background:#1b222a;color:var(--tx);border:1px solid var(--line);border-radius:8px;padding:7px 12px;font:inherit;cursor:pointer}.btn:hover{border-color:var(--dim)}.btn.red{color:var(--red)}
+pre#log{background:#0e1115;border:1px solid var(--line);border-radius:8px;padding:10px;max-height:380px;overflow:auto;font:12px/1.4 ui-monospace,Menlo,monospace;color:#b9c3cc;white-space:pre-wrap}
+.alerts div{padding:5px 0;border-top:1px solid var(--line);font-size:13px}.alerts span{color:var(--dim);margin-right:8px;font-variant-numeric:tabular-nums}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#1b222a;border:1px solid var(--line);padding:8px 14px;border-radius:10px;font-size:13px;opacity:0;transition:.2s;pointer-events:none}#toast.on{opacity:1}
+.apps{display:grid;grid-template-columns:1fr 1fr;gap:2px 12px}.apps label{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:14px}
+.wide{grid-column:1/-1}@media(max-width:700px){.live{grid-template-columns:1fr 1fr}}
+</style></head><body>
+<header><h1>DESK RADAR</h1><span class=chip>v<b id=fw>?</b></span><span class=chip>up <b id=up>?</b></span><span class=chip>WiFi <b id=rssi>?</b></span><span class=chip><b id=acn>?</b> aircraft via <b id=active>?</b></span><span class=chip><b id=fps>?</b> fps</span><span class=chip>heap <b id=heap>?</b> KB</span><span class=chip>Mac <b id=mac>?</b></span>
+<nav><a href=#live>Live</a><a href=#settings>Settings</a><a href=#tools>Tools</a><a href=#log>Log</a><a href=/config.json>Export</a></nav></header>
+<main>
+<section id=live class=card style="margin-bottom:14px"><h2>Live</h2><div class=live>
+<img class=dial id=imL src=/screen.bmp alt="left dial"><img class=dial id=imR src="/screen.bmp?d=1" alt="right dial"><img class=oled id=imOL src=/oled.bmp alt="left OLED"><img class=oled id=imOR src="/oled.bmp?d=1" alt="right OLED"></div>
+<div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class=btn onclick="liveOn=!liveOn;this.textContent=liveOn?'pause live':'resume live'">pause live</button>
+<span style="color:var(--dim);font-size:12px">app:</span><select id=appsel onchange="fetch('/app?n='+this.value)"></select>
+<button class=btn onclick="knob(1,'turn=-1')">◀ right knob</button><button class=btn onclick="knob(1,'turn=1')">right knob ▶</button><button class=btn onclick="knob(1,'click=1')">right click</button><button class=btn onclick="knob(1,'hold=1')">right hold</button><button class=btn onclick="knob(0,'click=1')">left click</button></div></section>
+<div id=settings class=grid>
+<div class=card><h2>Sound</h2>
+<div class=row><label>Mute everything<small>alarm still rings</small></label><label class=sw><input type=checkbox data-k=mute><i></i></label></div>
+<div class=row><label>Knob clicks</label><label class=sw><input type=checkbox data-k=clk><i></i></label></div>
+<div class=row><label>Louder piezo<small>low notes an octave up</small></label><label class=sw><input type=checkbox data-k=pzl><i></i></label></div>
+<div class=row><label>Hour chime</label><label class=sw><input type=checkbox data-k=chime><i></i></label></div>
+<div class=row><label>Quiet hours<small>from / until (same = off)</small></label><span><select data-k=q0 class=hours></select> <select data-k=q1 class=hours></select></span></div>
+<div class=row><label>Pomodoro sound</label><select data-k=psound><option value=0>chime<option value=1>soft<option value=2>silent</select></div>
+<div class=row><label>Alert sounds</label><span id=amask class=apps style="grid-column:auto"></span></div>
+</div>
+<div class=card><h2>Meetings</h2>
+<div class=row><label>Reminders</label><label class=sw><input type=checkbox data-k=mtg><i></i></label></div>
+<div class=row><label>First reminder</label><select data-k=mtgl><option value=2>2 min before<option value=5>5 min before<option value=10>10 min before<option value=15>15 min before</select></div>
+<div class=row><label>Show titles<small>off: only "Meeting"</small></label><label class=sw><input type=checkbox data-k=mtgt><i></i></label></div>
+<div class=row><label>On-air light<small>red dot on the right ring during calls</small></label><label class=sw><input type=checkbox data-k=onair><i></i></label></div>
+<div class=row><label>Mic on left click<small>mutes the Mac mic on calls</small></label><label class=sw><input type=checkbox data-k=micc><i></i></label></div>
+<div class=row><label>Mac Focus sync<small>Shortcuts "DeskRadar Focus On / Off"</small></label><label class=sw><input type=checkbox data-k=fsync><i></i></label></div>
+</div>
+<div class=card><h2>Display</h2>
+<div class=row><label>Round brightness</label><span><input type=range min=10 max=100 step=5 data-k=tftb><span class=val></span></span></div>
+<div class=row><label>OLED brightness</label><span><input type=range min=0 max=100 step=5 data-k=oledb><span class=val></span></span></div>
+<div class=row><label>Ring brightness</label><span><input type=range min=0 max=100 step=5 data-k=ringb><span class=val></span></span></div>
+<div class=row><label>Theme</label><select data-k=theme><option value=0>green<option value=1>amber<option value=2>ice<option value=3>white</select></div>
+<div class=row><label>Night dimming</label><select data-k=night><option value=0>auto<option value=1>always<option value=2>off</select></div>
+<div class=row><label>Night hours<small>from / until</small></label><span><select data-k=n0 class=hours></select> <select data-k=n1 class=hours></select></span></div>
+<div class=row><label>Rings at night</label><select data-k=nring><option value=0>off<option value=1>nightlight<option value=2>normal</select></div>
+<div class=row><label>Screens off<small>from / until (same = off)</small></label><span><select data-k=slp0 class=hours></select> <select data-k=slp1 class=hours></select></span></div>
+<div class=row><label>OLED text size</label><select data-k=osz><option value=0>1x<option value=1>1.5x<option value=2>2x<option value=3>3x</select></div>
+<div class=row><label>Radar sweep</label><label class=sw><input type=checkbox data-k=sweep><i></i></label></div>
+<div class=row><label>Slideshow after<small>idle minutes, 0 = off</small></label><span><input type=number min=0 max=240 step=5 data-k=slide> <select data-k=slmode><option value=0>cycle apps<option value=1>back to radar</select></span></div>
+</div>
+<div class=card><h2>Radar</h2>
+<div class=row><label>Home airport</label><select data-k=home class=airports></select></div>
+<div class=row><label>Arrivals board airport</label><select data-k=board class=airports></select></div>
+<div class=row><label>Range</label><select data-k=ri><option value=0>10 km<option value=1>25 km<option value=2>50 km<option value=3>100 km<option value=4>200 km<option value=5>auto</select></div>
+<div class=row><label>Show</label><select data-k=filter><option value=0>all<option value=1>arrivals<option value=2>departures</select></div>
+<div class=row><label>Right dial follows</label><select data-k=rfoc><option value=0>arrivals<option value=1>departures</select></div>
+<div class=row><label>Data source</label><select data-k=src><option value=0>OpenSky<option value=1>airplanes.live<option value=2>adsb.lol<option value=3>adsb.fi<option value=4>local receiver</select></div>
+<div class=row><label>Local receiver URL</label><input type=text data-k=lurl placeholder="http://192.168.x.x/data/aircraft.json"></div>
+<div class=row><label>Alert banners<small>alerts take over the dials</small></label><label class=sw><input type=checkbox data-k=popup><i></i></label></div>
+<div class=row><label>Look-up alert<small>aircraft close to the house</small></label><span><label class=sw><input type=checkbox data-k=lookup><i></i></label> <input type=number min=1 max=5 data-k=lookkm> km</span></div>
+<div class=row><label>Home position override<small>lat / lon, 0 = airport</small></label><span><input type=number step=0.0001 data-k=lat style="width:110px"> <input type=number step=0.0001 data-k=lon style="width:110px"></span></div>
+</div>
+<div class=card><h2>Clock</h2>
+<div class=row><label>12-hour clock</label><label class=sw><input type=checkbox data-k=h12><i></i></label></div>
+<div class=row><label>Face</label><select data-k=face><option value=0>Bold<option value=1>Analog<option value=2>Dashboard<option value=3>World<option value=4>24 Hour<option value=5>Minimal<option value=6>Flip<option value=7>Seconds<option value=8>Night Sky<option value=9>Year Dots<option value=10>Huge<option value=11>Rings<option value=12>Segments<option value=13>Nixie<option value=14>Words<option value=15>Weather<option value=16>Orbit</select></div>
+<div class=row><label>Right dial<small>with the clock</small></label><select data-k=clkr><option value=0>weather<option value=1>agenda<option value=2>world<option value=3>sun and moon<option value=4>next arrivals</select></div>
+<div class=row><label>Alarm</label><span><label class=sw><input type=checkbox data-k=alon><i></i></label> <input type=time data-k=almin></span></div>
+<div class=row><label>Alarm days</label><select data-k=aldays><option value=62>weekdays<option value=127>every day<option value=65>weekends<option value=0>custom (knob)</select></div>
+<div class=row><label>ISS passes</label><label class=sw><input type=checkbox data-k=iss><i></i></label></div>
+<div class=row><label>Seconds ring<small>right ring, every app</small></label><label class=sw><input type=checkbox data-k=sring><i></i></label></div>
+<div class=row><label>Weather location</label><select data-k=wxloc class=wxloc></select></div>
+<div class=row><label>House position<small>lat / lon for weather and look-up</small></label><span><input type=number step=0.0001 data-k=wxlat style="width:110px"> <input type=number step=0.0001 data-k=wxlon style="width:110px"></span></div>
+</div>
+<div class=card><h2>Pomodoro</h2>
+<div class=row><label>Your name</label><input type=text data-k=uname maxlength=12></div>
+<div class=row><label>Daily goal<small>minutes</small></label><input type=number min=30 max=480 step=15 data-k=pgoal></div>
+<div class=row><label>Long break / cycle</label><span><input type=number min=5 max=60 step=5 data-k=plong> min / <input type=number min=2 max=8 data-k=pcyc> sessions</span></div>
+<div class=row><label>Auto start next</label><label class=sw><input type=checkbox data-k=pauto><i></i></label></div>
+<div class=row><label>Quiet mode in focus</label><select data-k=pquiet><option value=0>off<option value=1>hold plane alerts<option value=2>planes + market<option value=3>all alerts</select></div>
+<div class=row><label>Greetings</label><label class=sw><input type=checkbox data-k=pgreet><i></i></label></div>
+<div class=row><label>Day recap at</label><select data-k=precap><option value=0>off<option value=17>17:00<option value=18>18:00<option value=19>19:00<option value=20>20:00<option value=21>21:00</select></div>
+<div class=row><label>Ending early</label><select data-k=pearly><option value=0>ask<option value=1>always log<option value=2>never log</select></div>
+<div class=row><label>Task label</label><input type=text data-k=ptask maxlength=24></div>
+<div class=row><label>Meeting timer<small>minutes</small></label><input type=number min=1 max=180 data-k=ptmr></div>
+<div class=row><label>Stand-up nudge<small>every N minutes, 0 = off</small></label><input type=number min=0 max=120 step=15 data-k=nudge></div>
+</div>
+<div class=card><h2>Apps</h2>
+<div class=row><label>App at power-on</label><select data-k=bapp id=bapp></select></div>
+<div class=row><label>Shown in the knob list</label></div><div id=apps class=apps></div>
+</div>
+<div class=card><h2>Watch list</h2>
+<div class=row><label>Flight watch<small>callsign prefix, route part like -DXB, or type prefix; comma separated</small></label></div><input type=text data-k=watch style="width:100%" placeholder="AIC, -DXB, B78">
+<div class=row><label>Countdowns<small>name=YYYY-MM-DD HH:MM; separated by ;</small></label></div><input type=text data-k=cdown style="width:100%" placeholder="Trip=2026-12-20 06:00">
+</div>
+<div class=card><h2>Recent alerts</h2><div id=alerts class=alerts></div></div>
+<div id=tools class=card><h2>Tools</h2>
+<div class=row><label>Settings file<small>export, or paste a file to import</small></label><a class=btn href=/config.json download>export</a></div>
+<textarea id=imp placeholder='{"range":2, ...}'></textarea><div style="margin:8px 0"><button class=btn onclick=doImport()>import</button></div>
+<div class=row><label>Firmware<small>upload a .bin, the device restarts</small></label><form method=POST action=/update enctype=multipart/form-data style="display:flex;gap:8px;align-items:center"><input type=file name=fw accept=.bin style="font-size:12px"><button class=btn>flash</button></form></div>
+<div class=row><label>Diagnostics</label><span><a class=btn href=/i2c>i2c</a> <a class=btn href=/dns>dns</a> <a class=btn href=/coredump>crash</a> <a class=btn href="/sdls?path=/deskradar">sd</a> <a class=btn href=/live>live mirror</a></span></div>
+<div class=row><label>Restart</label><button class="btn red" onclick="if(confirm('Restart the device?'))fetch('/restart').then(()=>toast('restarting'))">restart</button></div>
+</div>
+<div id=log class="card wide"><h2>Log <span style="float:right;font-weight:400;text-transform:none;letter-spacing:0"><input type=text id=logf placeholder=filter style="min-width:140px;padding:3px 8px"> <label><input type=checkbox id=logauto checked> auto</label></span></h2><pre id=log></pre></div>
+</div></main><div id=toast></div>
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const APPS=["RADAR","ARRIVALS","APPROACH","REPLAY","CLOCK","WEATHER","POMODORO","MARKETS","NETWORK","STATS","NEWS","CRICKET","F1","SYSTEM","DISPLAY","LOCATION","AGENDA","SETTINGS","MEDIA"],HIDE=[3,8,9,11,12,13,14,15];
+let liveOn=true,st=null,tt=null;
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),1400)}
+function set(k,v){if(k==='ri')k='range';fetch('/set?'+k+'='+encodeURIComponent(v)).then(r=>r.ok?toast('saved '+k):toast('failed '+k))}
+function knob(side,a){fetch('/knob?side='+side+'&'+a)}
+$$('.hours').forEach(s=>{for(let h=0;h<24;h++)s.insertAdjacentHTML('beforeend','<option value='+h+'>'+(h%12||12)+(h<12?' am':' pm')+'</option>')});
+APPS.forEach((n,i)=>{if(HIDE.includes(i))return;$('#bapp').insertAdjacentHTML('beforeend','<option value='+i+'>'+n+'</option>');if(i!==17)$('#apps').insertAdjacentHTML('beforeend','<label><input type=checkbox class=appbit data-bit='+i+'> '+n+'</label>');$('#appsel').insertAdjacentHTML('beforeend','<option value='+i+'>'+n+'</option>')});
+$$('[data-k]').forEach(el=>{el.addEventListener(el.type==='range'?'input':'change',()=>{let v;if(el.type==='checkbox')v=el.checked?1:0;else if(el.type==='time'){const[h,m]=el.value.split(':');v=(+h)*60+(+m)}else v=el.value;if(el.type==='range')el.nextElementSibling.textContent=v+'%';if(el.type==='range'){clearTimeout(el._t);el._t=setTimeout(()=>set(el.dataset.k,v),250)}else set(el.dataset.k,v)})});
+function mask(cls,ds){return $$(cls).reduce((m,c)=>c.checked?(m|(1<<+c.dataset[ds]))>>>0:m,0)>>>0}
+document.addEventListener('change',e=>{if(e.target.classList.contains('appbit'))set('apps',mask('.appbit','bit'));if(e.target.classList.contains('ambit'))set('amask',mask('.ambit','bit'))});
+function fill(){if(!st)return;const a=document.activeElement;$$('[data-k]').forEach(el=>{if(el===a||!(el.dataset.k in st))return;const v=st[el.dataset.k];if(el.type==='checkbox')el.checked=!!+v;else if(el.type==='time'){el.value=String(Math.floor(v/60)).padStart(2,'0')+':'+String(v%60).padStart(2,'0')}else el.value=v;if(el.type==='range')el.nextElementSibling.textContent=v+'%'});
+if(st.aldays!==undefined&&![62,127,65].includes(+st.aldays))$('[data-k=aldays]').value=0;
+$$('.appbit').forEach(c=>{if(c!==a)c.checked=!!((st.apps>>>+c.dataset.bit)&1)});$$('.ambit').forEach(c=>{if(c!==a)c.checked=!!((st.amask>>>+c.dataset.bit)&1)});
+$('#fw').textContent=st.fw||'?';$('#up').textContent=st.up||'?';$('#rssi').textContent=(st.rssi||'?')+' dBm';$('#acn').textContent=(st.ac||[]).length;$('#active').textContent=st.active||'?';$('#fps').textContent=st.fps;$('#heap').textContent=st.heap;$('#mac').textContent=st.mac?'linked':'off';
+$('#alerts').innerHTML=(st.alerts||[]).map(x=>'<div><span>'+x.t+'</span>'+x.l1+' <span>'+x.l2+'</span></div>').join('')||'<div style="color:var(--dim)">none yet</div>'}
+async function poll(){try{const r=await fetch('/api/state');const j=await r.json();const first=!st;st=j;if(first){const ap=$$('.airports');ap.forEach(s=>s.innerHTML=j.airports.map((n,i)=>'<option value='+i+'>'+n+'</option>').join(''));$('.wxloc').innerHTML='<option value=-2>House</option><option value=-1>Radar home</option>'+j.airports.map((n,i)=>'<option value='+i+'>'+n+'</option>').join('');
+$('#amask').innerHTML=(j.mnames||[]).map((n,i)=>[0,4,5,13].includes(i)?'':'<label><input type=checkbox class=ambit data-bit='+i+'> '+n+'</label>').join('')}fill()}catch(e){}}
+async function logPoll(){if(!$('#logauto').checked)return;try{const t=await (await fetch('/log')).text();const f=$('#logf').value.toLowerCase();const lines=t.split('\n').filter(l=>!f||l.toLowerCase().includes(f));const p=$('#log');const atEnd=p.scrollTop+p.clientHeight>=p.scrollHeight-20;p.textContent=lines.slice(-400).join('\n');if(atEnd)p.scrollTop=p.scrollHeight}catch(e){}}
+const SB='http://'+location.hostname+':8080';function live(){if(!liveOn||document.hidden)return;const n=Date.now();$('#imL').src=SB+'/screen.bmp?t='+n;$('#imR').src=SB+'/screen.bmp?d=1&t='+n;$('#imOL').src=SB+'/oled.bmp?t='+n;$('#imOR').src=SB+'/oled.bmp?d=1&t='+n}
+async function doImport(){const r=await fetch('/import',{method:'POST',headers:{'Content-Type':'text/plain'},body:$('#imp').value});toast(await r.text());poll()}
+poll();setInterval(poll,5000);logPoll();setInterval(logPoll,10000);setInterval(live,2000);$('#logf').addEventListener('input',logPoll);
+</script></body></html>

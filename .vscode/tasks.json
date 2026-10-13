@@ -1,0 +1,11 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    { "label": "Compile", "type": "shell", "command": "make compile", "group": { "kind": "build", "isDefault": true }, "problemMatcher": ["$gcc"] },
+    { "label": "Flash (USB)", "type": "shell", "command": "make upload", "problemMatcher": ["$gcc"] },
+    { "label": "Flash (WiFi OTA)", "type": "shell", "command": "make ota", "problemMatcher": ["$gcc"] },
+    { "label": "Serial log 60 s", "type": "shell", "command": "make log", "problemMatcher": [] },
+    { "label": "Web log", "type": "shell", "command": "make weblog", "problemMatcher": [] },
+    { "label": "Regenerate + check v6 case", "type": "shell", "command": "make case", "problemMatcher": [] }
+  ]
+}

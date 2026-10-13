@@ -1,0 +1,14 @@
+# credentials and personal config: never commit
+firmware/desk_plane_radar_v6/secrets.h
+firmware/desk_plane_radar_v6/config_local.h
+# build output
+build/
+build6/
+build_probe/
+*.bin
+*.elf
+*.map
+__pycache__/
+.DS_Store
+# generated SD card contents
+sd_card/

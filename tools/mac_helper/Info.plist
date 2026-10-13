@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleIdentifier</key><string>local.deskradar.helper</string>
+  <key>CFBundleName</key><string>DeskRadarHelper</string>
+  <key>CFBundleVersion</key><string>1.0</string>
+  <key>NSCalendarsFullAccessUsageDescription</key><string>Desk Radar shows your next meeting and reminds you before it starts.</string>
+  <key>NSCalendarsUsageDescription</key><string>Desk Radar shows your next meeting and reminds you before it starts.</string>
+  <key>NSAppleEventsUsageDescription</key><string>Desk Radar shows what is playing and lets the knobs control volume, play / pause and the microphone.</string>
+</dict>
+</plist>

@@ -1,0 +1,1 @@
+{ "files.associations": { "*.ino": "cpp" }, "files.exclude": { "build": true, "**/__pycache__": true } }
